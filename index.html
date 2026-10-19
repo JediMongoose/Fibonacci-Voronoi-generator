@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fibonacci Voronoi plate</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap">
+<script>!function(e){"object"==typeof exports&&"undefined"!=typeof module?module.exports=e():"function"==typeof define&&define.amd?define([],e):("undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:this).earcut=e()}(function(){return function r(x,i,u){function f(n,e){if(!i[n]){if(!x[n]){var t="function"==typeof require&&require;if(!e&&t)return t(n,!0);if(o)return o(n,!0);throw(e=new Error("Cannot find module '"+n+"'")).code="MODULE_NOT_FOUND",e}t=i[n]={exports:{}},x[n][0].call(t.exports,function(e){return f(x[n][1][e]||e)},t,t.exports,r,x,i,u)}return i[n].exports}for(var o="function"==typeof require&&require,e=0;e<u.length;e++)f(u[e]);return f}({1:[function(e,n,t){"use strict";function r(e,n,t){t=t||2;var r,x,i,u,f,o=n&&n.length,v=o?n[0]*t:e.length,p=s(e,0,v,t,!0),y=[];if(p&&p.next!==p.prev){if(o&&(p=function(e,n,t,r){var x,i,u,f,o=[];for(x=0,i=n.length;x<i;x++)f=n[x]*r,u=x<i-1?n[x+1]*r:e.length,(f=s(e,f,u,r,!1))===f.next&&(f.steiner=!0),o.push(function(e){var n=e,t=e;for(;(n.x<t.x||n.x===t.x&&n.y<t.y)&&(t=n),n=n.next,n!==e;);return t}(f));for(o.sort(c),x=0;x<o.length;x++)t=function(e,n){var t=function(e,n){var t,r=n,x=e.x,i=e.y,u=-1/0;do{if(i<=r.y&&i>=r.next.y&&r.next.y!==r.y){var f=r.x+(i-r.y)*(r.next.x-r.x)/(r.next.y-r.y);if(f<=x&&u<f&&(u=f,t=r.x<r.next.x?r:r.next,f===x))return t}}while(r=r.next,r!==n);if(!t)return null;var o,v=t,p=t.x,y=t.y,a=1/0;r=t;for(;x>=r.x&&r.x>=p&&x!==r.x&&D(i<y?x:u,i,p,y,i<y?u:x,i,r.x,r.y)&&(o=Math.abs(i-r.y)/(x-r.x),_(r,e)&&(o<a||o===a&&(r.x>t.x||r.x===t.x&&function(e,n){return E(e.prev,e,n.prev)<0&&E(n.next,e,e.next)<0}(t,r)))&&(t=r,a=o)),r=r.next,r!==v;);return t}(e,n);if(!t)return n;n=j(t,e);return q(n,n.next),q(t,t.next)}(o[x],t);return t}(e,n,p,t)),e.length>80*t){for(var a=r=e[0],l=x=e[1],h=t;h<v;h+=t)(i=e[h])<a&&(a=i),(u=e[h+1])<l&&(l=u),r<i&&(r=i),x<u&&(x=u);f=0!==(f=Math.max(r-a,x-l))?32767/f:0}O(p,y,t,a,l,f,0)}return y}function s(e,n,t,r,x){var i,u;if(x===0<d(e,n,t,r))for(i=n;i<t;i+=r)u=f(i,e[i],e[i+1],u);else for(i=t-r;n<=i;i-=r)u=f(i,e[i],e[i+1],u);return u&&N(u,u.next)&&(C(u),u=u.next),u}function q(e,n){if(!e)return e;n=n||e;var t,r=e;do{if(t=!1,r.steiner||!N(r,r.next)&&0!==E(r.prev,r,r.next))r=r.next;else{if(C(r),(r=n=r.prev)===r.next)break;t=!0}}while(t||r!==n);return n}function O(e,n,t,r,x,i,u){if(e){if(!u&&i){for(var f=e,o=r,v=x,p=i,y=f;0===y.z&&(y.z=k(y.x,y.y,o,v,p)),y.prevZ=y.prev,y.nextZ=y.next,(y=y.next)!==f;);y.prevZ.nextZ=null,y.prevZ=null;var a,l,h,s,c,d,Z,g,w=y,M=1;do{for(l=w,c=w=null,d=0;l;){for(d++,h=l,a=Z=0;a<M&&(Z++,h=h.nextZ);a++);for(g=M;0<Z||0<g&&h;)0!==Z&&(0===g||!h||l.z<=h.z)?(l=(s=l).nextZ,Z--):(h=(s=h).nextZ,g--),c?c.nextZ=s:w=s,s.prevZ=c,c=s;l=h}}while(c.nextZ=null,M*=2,1<d)}for(var b,m,z=e;e.prev!==e.next;)if(b=e.prev,m=e.next,i?function(e,n,t,r){var x=e.prev,i=e,u=e.next;if(0<=E(x,i,u))return;var f=x.x,o=i.x,v=u.x,p=x.y,y=i.y,a=u.y,l=f<o?f<v?f:v:o<v?o:v,h=p<y?p<a?p:a:y<a?y:a,s=o<f?v<f?f:v:v<o?o:v,c=y<p?a<p?p:a:a<y?y:a,d=k(l,h,n,t,r),Z=k(s,c,n,t,r),g=e.prevZ,w=e.nextZ;for(;g&&g.z>=d&&w&&w.z<=Z;){if(g.x>=l&&g.x<=s&&g.y>=h&&g.y<=c&&g!==x&&g!==u&&D(f,p,o,y,v,a,g.x,g.y)&&0<=E(g.prev,g,g.next))return;if(g=g.prevZ,w.x>=l&&w.x<=s&&w.y>=h&&w.y<=c&&w!==x&&w!==u&&D(f,p,o,y,v,a,w.x,w.y)&&0<=E(w.prev,w,w.next))return;w=w.nextZ}for(;g&&g.z>=d;){if(g.x>=l&&g.x<=s&&g.y>=h&&g.y<=c&&g!==x&&g!==u&&D(f,p,o,y,v,a,g.x,g.y)&&0<=E(g.prev,g,g.next))return;g=g.prevZ}for(;w&&w.z<=Z;){if(w.x>=l&&w.x<=s&&w.y>=h&&w.y<=c&&w!==x&&w!==u&&D(f,p,o,y,v,a,w.x,w.y)&&0<=E(w.prev,w,w.next))return;w=w.nextZ}return 1}(e,r,x,i):function(e){var n=e.prev,t=e,e=e.next;if(0<=E(n,t,e))return;var r=n.x,x=t.x,i=e.x,u=n.y,f=t.y,o=e.y,v=r<x?r<i?r:i:x<i?x:i,p=u<f?u<o?u:o:f<o?f:o,y=x<r?i<r?r:i:i<x?x:i,a=f<u?o<u?u:o:o<f?f:o,l=e.next;for(;l!==n;){if(l.x>=v&&l.x<=y&&l.y>=p&&l.y<=a&&D(r,u,x,f,i,o,l.x,l.y)&&0<=E(l.prev,l,l.next))return;l=l.next}return 1}(e))n.push(b.i/t|0),n.push(e.i/t|0),n.push(m.i/t|0),C(e),e=m.next,z=m.next;else if((e=m)===z){u?1===u?O(e=function(e,n,t){var r=e;do{var x=r.prev,i=r.next.next}while(!N(x,i)&&U(x,r,r.next,i)&&_(x,i)&&_(i,x)&&(n.push(x.i/t|0),n.push(r.i/t|0),n.push(i.i/t|0),C(r),C(r.next),r=e=i),r=r.next,r!==e);return q(r)}(q(e),n,t),n,t,r,x,i,2):2===u&&function(e,n,t,r,x,i){var u=e;do{for(var f,o=u.next.next;o!==u.prev;){if(u.i!==o.i&&function(e,n){return e.next.i!==n.i&&e.prev.i!==n.i&&!function(e,n){var t=e;do{if(t.i!==e.i&&t.next.i!==e.i&&t.i!==n.i&&t.next.i!==n.i&&U(t,t.next,e,n))return 1}while(t=t.next,t!==e);return}(e,n)&&(_(e,n)&&_(n,e)&&function(e,n){var t=e,r=!1,x=(e.x+n.x)/2,i=(e.y+n.y)/2;for(;t.y>i!=t.next.y>i&&t.next.y!==t.y&&x<(t.next.x-t.x)*(i-t.y)/(t.next.y-t.y)+t.x&&(r=!r),t=t.next,t!==e;);return r}(e,n)&&(E(e.prev,e,n.prev)||E(e,n.prev,n))||N(e,n)&&0<E(e.prev,e,e.next)&&0<E(n.prev,n,n.next))}(u,o))return f=j(u,o),u=q(u,u.next),f=q(f,f.next),O(u,n,t,r,x,i,0),O(f,n,t,r,x,i,0);o=o.next}}while(u=u.next,u!==e)}(e,n,t,r,x,i):O(q(e),n,t,r,x,i,1);break}}}function c(e,n){return e.x-n.x}function k(e,n,t,r,x){return(e=1431655765&((e=858993459&((e=252645135&((e=16711935&((e=(e-t)*x|0)|e<<8))|e<<4))|e<<2))|e<<1))|(n=1431655765&((n=858993459&((n=252645135&((n=16711935&((n=(n-r)*x|0)|n<<8))|n<<4))|n<<2))|n<<1))<<1}function D(e,n,t,r,x,i,u,f){return(e-u)*(i-f)<=(x-u)*(n-f)&&(t-u)*(n-f)<=(e-u)*(r-f)&&(x-u)*(r-f)<=(t-u)*(i-f)}function E(e,n,t){return(n.y-e.y)*(t.x-n.x)-(n.x-e.x)*(t.y-n.y)}function N(e,n){return e.x===n.x&&e.y===n.y}function U(e,n,t,r){var x=v(E(e,n,t)),i=v(E(e,n,r)),u=v(E(t,r,e)),f=v(E(t,r,n));return x!==i&&u!==f||(0===x&&o(e,t,n)||(0===i&&o(e,r,n)||(0===u&&o(t,e,r)||!(0!==f||!o(t,n,r)))))}function o(e,n,t){return n.x<=Math.max(e.x,t.x)&&n.x>=Math.min(e.x,t.x)&&n.y<=Math.max(e.y,t.y)&&n.y>=Math.min(e.y,t.y)}function v(e){return 0<e?1:e<0?-1:0}function _(e,n){return E(e.prev,e,e.next)<0?0<=E(e,n,e.next)&&0<=E(e,e.prev,n):E(e,n,e.prev)<0||E(e,e.next,n)<0}function j(e,n){var t=new u(e.i,e.x,e.y),r=new u(n.i,n.x,n.y),x=e.next,i=n.prev;return(e.next=n).prev=e,(t.next=x).prev=t,(r.next=t).prev=r,(i.next=r).prev=i,r}function f(e,n,t,r){e=new u(e,n,t);return r?(e.next=r.next,(e.prev=r).next.prev=e,r.next=e):(e.prev=e).next=e,e}function C(e){e.next.prev=e.prev,e.prev.next=e.next,e.prevZ&&(e.prevZ.nextZ=e.nextZ),e.nextZ&&(e.nextZ.prevZ=e.prevZ)}function u(e,n,t){this.i=e,this.x=n,this.y=t,this.prev=null,this.next=null,this.z=0,this.prevZ=null,this.nextZ=null,this.steiner=!1}function d(e,n,t,r){for(var x=0,i=n,u=t-r;i<t;i+=r)x+=(e[u]-e[i])*(e[i+1]+e[u+1]),u=i;return x}n.exports=r,(n.exports.default=r).deviation=function(e,n,t,r){var x=n&&n.length,i=x?n[0]*t:e.length,u=Math.abs(d(e,0,i,t));if(x)for(var f=0,o=n.length;f<o;f++){var v=n[f]*t,p=f<o-1?n[f+1]*t:e.length;u-=Math.abs(d(e,v,p,t))}for(var y=0,f=0;f<r.length;f+=3){var a=r[f]*t,l=r[f+1]*t,h=r[f+2]*t;y+=Math.abs((e[a]-e[h])*(e[1+l]-e[1+a])-(e[a]-e[l])*(e[1+h]-e[1+a]))}return 0===u&&0===y?0:Math.abs((y-u)/u)},r.flatten=function(e){for(var n=e[0][0].length,t={vertices:[],holes:[],dimensions:n},r=0,x=0;x<e.length;x++){for(var i=0;i<e[x].length;i++)for(var u=0;u<n;u++)t.vertices.push(e[x][i][u]);0<x&&(r+=e[x-1].length,t.holes.push(r))}return t}},{}]},{},[1])(1)});
+</script>
+<style>
+:root{--bg:#eef2f3;--panel:#fff;--ink:#14262e;--mute:#5d737c;--plate:#1f3a45;--line:#cfdadd;--acc:#127c6e;--accink:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a20;--panel:#15252d;--ink:#e3edf0;--mute:#8ea4ac;--plate:#cfe0e5;--line:#27404a;--acc:#3fc2ae;--accink:#06221d}}
+:root[data-theme="dark"]{--bg:#0e1a20;--panel:#15252d;--ink:#e3edf0;--mute:#8ea4ac;--plate:#cfe0e5;--line:#27404a;--acc:#3fc2ae;--accink:#06221d}
+*,*:before,*:after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px}
+@media (max-width:820px){main{grid-template-columns:1fr}}
+h1{grid-column:1/-1;margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em}
+h1 small{display:block;font-size:14px;font-weight:400;color:var(--mute);margin-top:4px}
+.view{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;align-self:start}
+.view svg{display:block;width:100%;height:auto;max-height:80vh}
+.view .st{margin:8px 4px 0;color:var(--mute);font-size:13px}
+.ctl{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px}
+label{display:block;font-size:13px;color:var(--mute)}
+.row{display:flex;gap:10px;align-items:center;margin-top:4px}
+input[type=range]{flex:1;min-width:0;accent-color:var(--acc)}
+input[type=number]{width:78px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+button{font:600 14px "IBM Plex Sans",system-ui,sans-serif;padding:10px 12px;border-radius:8px;border:1px solid var(--acc);background:var(--acc);color:var(--accink);cursor:pointer}
+button.alt{background:transparent;color:var(--ink);border-color:var(--line)}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.btns{display:grid;gap:8px}
+#msg{min-height:1.4em;font-size:13px;color:var(--mute)}
+</style>
+</head>
+<body>
+<main>
+<h1>Fibonacci Voronoi plate<small>A round plate cut with one hole per Voronoi cell of a sunflower spiral.</small></h1>
+<section class="view">
+  <svg id="svg" viewBox="-90 -90 180 180" role="img" aria-label="Preview of the plate"></svg>
+  <div class="st" id="stats"></div>
+</section>
+<section class="ctl" id="ctl">
+  <div class="btns">
+    <button id="bstl">Download STL</button>
+    <button id="bsvg" class="alt">Download SVG outline</button>
+    <button id="breset" class="alt">Reset to defaults</button>
+  </div>
+  <div id="msg" role="status"></div>
+</section>
+</main>
+<script>
+const DEF={R:260,T:2,N:256,k:4.825,wall:.8,border:5.6,fit:true,start:225};
+const SPEC=[["R","Plate radius (mm)",40,600,1],["T","Thickness (mm)",.4,10,.1],["N","Number of cells",20,800,1],["k","Spiral scale",1,40,.05],["wall","Wall between holes (mm)",.3,15,.05],["border","Border width (mm)",1,150,.1],["start","Start angle (deg)",0,360,1]];
+const P={...DEF}, GA=180*(3-Math.sqrt(5));
+const $=id=>document.getElementById(id);
+const ctl=$("ctl"), btns=ctl.querySelector(".btns");
+const inputs={};
+SPEC.forEach(([key,name,min,max,step])=>{
+  const d=document.createElement("div");
+  d.innerHTML=`<label for="r_${key}">${name}</label><div class="row"><input type="range" id="r_${key}" min="${min}" max="${max}" step="${step}"><input type="number" id="n_${key}" min="${min}" max="${max}" step="${step}"></div>`;
+  ctl.insertBefore(d,btns);
+  const r=d.querySelector("[type=range]"), n=d.querySelector("[type=number]");
+  inputs[key]=[r,n];
+  const set=e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){P[key]=v;r.value=v;if(e.target===r)n.value=v;schedule();}};
+  r.addEventListener("input",set); n.addEventListener("change",set);
+});
+const effK=()=>P.fit?0.9542*(P.R-P.border+P.wall/2)/Math.sqrt(P.N-.5):P.k;
+const fitBox=document.createElement("div");
+fitBox.innerHTML='<label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="fit"> Scale spiral to fill the plate</label>';
+ctl.insertBefore(fitBox,btns);
+const fit=fitBox.querySelector("input");
+fit.addEventListener("change",()=>{const cur=effK();P.fit=fit.checked;if(!P.fit)P.k=cur;schedule();});
+function sync(){
+  if(P.border>P.R-5)P.border=P.R-5;
+  for(const k in inputs){let v=k==="k"?+effK().toFixed(3):P[k];inputs[k][0].value=v;inputs[k][1].value=v;inputs[k][0].disabled=inputs[k][1].disabled=(k==="k"&&P.fit);}
+  fit.checked=P.fit;
+}
+
+function clipHalf(poly,p,nx,ny,lim){
+  const out=[];
+  for(let i=0;i<poly.length;i++){
+    const a=poly[i],b=poly[(i+1)%poly.length];
+    const da=(a[0]-p[0])*nx+(a[1]-p[1])*ny-lim, db=(b[0]-p[0])*nx+(b[1]-p[1])*ny-lim;
+    if(da<=0)out.push(a);
+    if((da<0&&db>0)||(da>0&&db<0)){const t=da/(da-db);out.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);}
+  }
+  return out;
+}
+function build(){
+  const k=effK();const S=[];for(let i=0;i<P.N;i++){const r=k*Math.sqrt(i+.5),a=(P.start-i*GA)*Math.PI/180;S.push([r*Math.cos(a),r*Math.sin(a)]);}
+  const rc=Math.max(1,P.R-P.border), holes=[];
+  for(let i=0;i<S.length;i++){
+    const p=S[i];
+    let poly=[];for(let s=0;s<128;s++){const a=s/128*2*Math.PI;poly.push([rc*Math.cos(a),rc*Math.sin(a)]);}
+    const others=[];for(let j=0;j<S.length;j++)if(j!==i)others.push([Math.hypot(S[j][0]-p[0],S[j][1]-p[1]),j]);
+    others.sort((a,b)=>a[0]-b[0]);
+    for(const [d,j] of others){
+      let m=0;for(const v of poly)m=Math.max(m,Math.hypot(v[0]-p[0],v[1]-p[1]));
+      if(d/2-P.wall/2>m)break;
+      poly=clipHalf(poly,p,(S[j][0]-p[0])/d,(S[j][1]-p[1])/d,d/2-P.wall/2);
+      if(poly.length<3)break;
+    }
+    if(poly.length>=3)holes.push(poly);
+  }
+  return holes;
+}
+const area=pl=>{let s=0;for(let i=0;i<pl.length;i++){const a=pl[i],b=pl[(i+1)%pl.length];s+=a[0]*b[1]-b[0]*a[1];}return s/2;};
+let holes=[];
+function render(){sync();
+  holes=build();
+  let d="",ha=0;
+  for(const h of holes){d+="M"+h.map(v=>v[0].toFixed(2)+" "+(-v[1]).toFixed(2)).join("L")+"Z";ha+=Math.abs(area(h));}
+  const R=P.R,m=R+4;
+  const svg=$("svg");svg.setAttribute("viewBox",`${-m} ${-m} ${2*m} ${2*m}`);
+  svg.innerHTML=`<path fill="var(--plate)" fill-rule="evenodd" d="M${-R} 0a${R} ${R} 0 1 0 ${2*R} 0a${R} ${R} 0 1 0 ${-2*R} 0Z${d}"/>`;
+  const vol=(Math.PI*R*R-ha)*P.T;
+  $("stats").textContent=`${holes.length} holes, ${(2*R).toFixed(0)} mm across, ${P.T} mm thick, about ${(vol/1000).toFixed(1)} cm³ of material`;
+}
+let pending=false;
+function schedule(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render();});}
+
+// ---- exports ----
+function stl(){
+  const rings=[], NO=180, outer=[];
+  for(let i=0;i<NO;i++){const a=i/NO*2*Math.PI;outer.push([P.R*Math.cos(a),P.R*Math.sin(a)]);}
+  rings.push(outer);
+  holes.forEach(h=>rings.push(area(h)>0?h.slice().reverse():h));
+  const flat=[],hi=[];let n=0;
+  rings.forEach((r,idx)=>{if(idx>0)hi.push(n);r.forEach(v=>{flat.push(v[0],v[1]);n++;});});
+  const idx=earcut(flat,hi),T=P.T,tris=[];
+  const V=i=>[flat[2*i],flat[2*i+1]];
+  for(let i=0;i<idx.length;i+=3){
+    let a=V(idx[i]),b=V(idx[i+1]),c=V(idx[i+2]);
+    if(area([a,b,c])<0)[b,c]=[c,b];
+    tris.push([[...a,T],[...b,T],[...c,T]],[[...a,0],[...c,0],[...b,0]]);
+  }
+  rings.forEach(r=>{for(let i=0;i<r.length;i++){const a=r[i],b=r[(i+1)%r.length];
+    tris.push([[...a,0],[...b,0],[...b,T]],[[...a,0],[...b,T],[...a,T]]);}});
+  const buf=new ArrayBuffer(84+50*tris.length),dv=new DataView(buf);
+  dv.setUint32(80,tris.length,true);
+  tris.forEach((t,i)=>{
+    const o=84+50*i,u=[0,1,2].map(k=>t[1][k]-t[0][k]),v=[0,1,2].map(k=>t[2][k]-t[0][k]);
+    let nm=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];const l=Math.hypot(...nm)||1;
+    [...nm.map(x=>x/l),...t[0],...t[1],...t[2]].forEach((x,k)=>dv.setFloat32(o+4*k,x,true));
+  });
+  return new Uint8Array(buf);
+}
+const CT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t.push(c>>>0);}return t;})();
+const crc=u=>{let c=~0;for(let i=0;i<u.length;i++)c=CT[(c^u[i])&255]^(c>>>8);return ~c>>>0;};
+function zip(name,data){
+  const nb=new TextEncoder().encode(name),c=crc(data),L=30+nb.length,sz=data.length;
+  const out=new Uint8Array(L+sz+46+nb.length+22),dv=new DataView(out.buffer);
+  dv.setUint32(0,0x04034b50,true);dv.setUint16(4,20,true);dv.setUint32(14,c,true);dv.setUint32(18,sz,true);dv.setUint32(22,sz,true);dv.setUint16(26,nb.length,true);
+  out.set(nb,30);out.set(data,L);
+  let o=L+sz;
+  dv.setUint32(o,0x02014b50,true);dv.setUint16(o+4,20,true);dv.setUint16(o+6,20,true);dv.setUint32(o+16,c,true);dv.setUint32(o+20,sz,true);dv.setUint32(o+24,sz,true);dv.setUint16(o+28,nb.length,true);
+  out.set(nb,o+46);
+  o+=46+nb.length;
+  dv.setUint32(o,0x06054b50,true);dv.setUint16(o+8,1,true);dv.setUint16(o+10,1,true);dv.setUint32(o+12,46+nb.length,true);dv.setUint32(o+16,L+sz,true);
+  return out;
+}
+function svgText(){
+  const R=P.R;let d="";
+  for(const h of holes)d+="M"+h.map(v=>v[0].toFixed(3)+" "+(-v[1]).toFixed(3)).join("L")+"Z";
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${2*R}mm" height="${2*R}mm" viewBox="${-R} ${-R} ${2*R} ${2*R}"><path fill="#000" fill-rule="evenodd" d="M${-R} 0a${R} ${R} 0 1 0 ${2*R} 0a${R} ${R} 0 1 0 ${-2*R} 0Z${d}"/></svg>`;
+}
+let dl=null;
+const msg=t=>$("msg").textContent=t;
+async function save(filename,data){
+  if(!dl){const b=data instanceof Blob?data:new Blob([data]);const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);msg("Saved "+filename+".");return;}
+  try{await dl.save({filename,data});msg("Saved "+filename+".");}
+  catch(e){msg(e&&e.code==="declined"?"Download cancelled.":"Couldn't save the file ("+((e&&e.code)||"error")+").");}
+}
+$("bstl").onclick=()=>{
+  if(typeof earcut==="undefined"){msg("The triangulation library didn't load, so STL export is unavailable. SVG still works.");return;}
+  if(dl)save("voronoi_fibonacci_stl.zip",new Blob([zip("voronoi_fibonacci.stl",stl())],{type:"application/zip"}));else save("voronoi_fibonacci.stl",new Blob([stl()],{type:"model/stl"}));
+};
+$("bsvg").onclick=()=>save("voronoi_fibonacci.svg",svgText());
+$("breset").onclick=()=>{Object.assign(P,DEF);sync();schedule();};
+(async()=>{try{dl=await claude.use("downloads");}catch(e){dl=null;}
+  })();
+sync();render();
+</script>
+</body>
+</html>
