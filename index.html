@@ -45,6 +45,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div class="btns">
     <button id="bstl">Download STL</button>
     <button id="bled" class="alt">Download LED mask STL</button>
+    <button id="bwire" class="alt">Download wiring guide STL</button>
     <button id="bsvg" class="alt">Download SVG outline</button>
     <button id="breset" class="alt">Reset to defaults</button>
   </div>
@@ -52,8 +53,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </section>
 </main>
 <script>
-const DEF={R:260,T:2,N:256,k:4.825,wall:.8,border:5.6,led:5,ledT:2,fit:true,start:225};
-const SPEC=[["R","Plate radius (mm)",40,600,1],["T","Thickness (mm)",.4,10,.1],["N","Number of cells",20,800,1],["k","Spiral scale",1,40,.05],["wall","Wall between holes (mm)",.3,15,.05],["border","Border width (mm)",1,150,.1],["start","Start angle (deg)",0,360,1],["led","LED mask hole diameter (mm)",.5,40,.1],["ledT","LED mask thickness (mm)",.4,10,.1]];
+const DEF={R:260,T:2,N:256,k:4.825,wall:.8,border:5.6,led:5,ledT:2,wireW:2,wireH:3,arms:13,wire:false,fit:true,start:225};
+const SPEC=[["R","Plate radius (mm)",40,600,1],["T","Thickness (mm)",.4,10,.1],["N","Number of cells",20,800,1],["k","Spiral scale",1,40,.05],["wall","Wall between holes (mm)",.3,15,.05],["border","Border width (mm)",1,150,.1],["start","Start angle (deg)",0,360,1],["led","LED mask hole diameter (mm)",.5,40,.1],["ledT","LED mask thickness (mm)",.4,10,.1],["wireW","Wiring guide rib width (mm)",.6,10,.1],["wireH","Wiring guide rib height (mm)",.5,15,.1]];
 const P={...DEF}, GA=180*(3-Math.sqrt(5));
 const $=id=>document.getElementById(id);
 const ctl=$("ctl"), btns=ctl.querySelector(".btns");
@@ -73,10 +74,16 @@ fitBox.innerHTML='<label style="display:flex;gap:8px;align-items:center;color:va
 ctl.insertBefore(fitBox,btns);
 const fit=fitBox.querySelector("input");
 fit.addEventListener("change",()=>{const cur=effK();P.fit=fit.checked;if(!P.fit)P.k=cur;schedule();});
+const wireBox=document.createElement("div");
+wireBox.innerHTML='<label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="wire"> Show wiring guide in preview</label><label for="arms" style="margin-top:8px">Wiring segments (one per spiral arm)</label><select id="arms" style="margin-top:4px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit">'+[5,8,13,21,34].map(v=>`<option value="${v}">${v}</option>`).join("")+'</select>';
+ctl.insertBefore(wireBox,btns);
+const wireCb=wireBox.querySelector("#wire"),armSel=wireBox.querySelector("#arms");
+wireCb.addEventListener("change",()=>{P.wire=wireCb.checked;schedule();});
+armSel.addEventListener("change",()=>{P.arms=+armSel.value;schedule();});
 function sync(){
   if(P.border>P.R-5)P.border=P.R-5;
   for(const k in inputs){let v=k==="k"?+effK().toFixed(3):P[k];inputs[k][0].value=v;inputs[k][1].value=v;inputs[k][0].disabled=inputs[k][1].disabled=(k==="k"&&P.fit);}
-  fit.checked=P.fit;
+  fit.checked=P.fit;wireCb.checked=P.wire;armSel.value=P.arms;
 }
 
 function clipHalf(poly,p,nx,ny,lim){
@@ -91,7 +98,7 @@ function clipHalf(poly,p,nx,ny,lim){
 }
 function build(){
   const k=effK();const S=[];for(let i=0;i<P.N;i++){const r=k*Math.sqrt(i+.5),a=(P.start-i*GA)*Math.PI/180;S.push([r*Math.cos(a),r*Math.sin(a)]);}
-  const rc=Math.max(1,P.R-P.border), holes=[];
+  const rc=Math.max(1,P.R-P.border), holes=[];ids=[];
   for(let i=0;i<S.length;i++){
     const p=S[i];
     let poly=[];for(let s=0;s<128;s++){const a=s/128*2*Math.PI;poly.push([rc*Math.cos(a),rc*Math.sin(a)]);}
@@ -103,13 +110,49 @@ function build(){
       poly=clipHalf(poly,p,(S[j][0]-p[0])/d,(S[j][1]-p[1])/d,d/2-P.wall/2);
       if(poly.length<3)break;
     }
-    if(poly.length>=3)holes.push(poly);
+    if(poly.length>=3){holes.push(poly);ids.push(i);}
   }
   return holes;
 }
 const area=pl=>{let s=0;for(let i=0;i<pl.length;i++){const a=pl[i],b=pl[(i+1)%pl.length];s+=a[0]*b[1]-b[0]*a[1];}return s/2;};
 let holes=[];
+let ids=[];
 function ledHoles(){return holes.map(h=>{let A=0,cx=0,cy=0;for(let i=0;i<h.length;i++){const a=h[i],b=h[(i+1)%h.length],c=a[0]*b[1]-b[0]*a[1];A+=c;cx+=(a[0]+b[0])*c;cy+=(a[1]+b[1])*c;}A*=.5;cx/=6*A;cy/=6*A;let m=1e9;for(let i=0;i<h.length;i++){const a=h[i],b=h[(i+1)%h.length],ex=b[0]-a[0],ey=b[1]-a[1],t=Math.max(0,Math.min(1,((cx-a[0])*ex+(cy-a[1])*ey)/(ex*ex+ey*ey||1))),dx=cx-(a[0]+t*ex),dy=cy-(a[1]+t*ey);m=Math.min(m,Math.hypot(dx,dy));}return{x:cx,y:cy,r:Math.min(P.led/2,m*.95)};});}
+function wireLines(){
+  const L=ledHoles(),pos=new Map();ids.forEach((id,k)=>pos.set(id,L[k]));
+  const M=P.arms,ph=r=>(((-r*GA)%360)+360)%360,cls=[];
+  for(let r=0;r<M;r++)cls.push(r);
+  cls.sort((a,b)=>ph(a)-ph(b));
+  const segs=[],out=[];
+  cls.forEach(r=>{const arm=[];for(let n=r;n<P.N;n+=M)if(pos.has(n))arm.push(pos.get(n));segs.push(arm);});
+  for(const s of segs)for(let i=0;i+1<s.length;i++){
+    const a=s[i],b=s[i+1],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+    if(d-a.r-b.r<.5)continue;
+    const ux=dx/d,uy=dy/d;
+    out.push({a:[a.x+ux*a.r,a.y+uy*a.r],b:[b.x-ux*b.r,b.y-uy*b.r]});
+  }
+  out.counts=segs.map(s=>s.length);
+  out.ends=segs.filter(s=>s.length).map(s=>[s[0],s[s.length-1]]);
+  return out;
+}
+function wireDots(){return wireLines().ends.map(e=>[[e[0],"#2fbf71"],[e[1],"#e5484d"]].map(([c,f])=>`<circle cx="${c.x.toFixed(2)}" cy="${(-c.y).toFixed(2)}" r="${Math.max(2.5,P.R/70).toFixed(2)}" fill="${f}" stroke="#fff" stroke-width=".6"/>`).join("")).join("");}
+function wireInfo(){const c=wireLines().counts,mn=Math.min(...c),mx=Math.max(...c),e=Math.round(P.N/P.arms)*P.arms;return `. Wiring: ${c.length} separate segments of ${mn===mx?mn:mn+"\u2013"+mx} LEDs (green = start, red = end)`+(mn===mx?"":` (set cells to ${e} for equal segments)`);}
+function triBuf(tris){
+  const buf=new ArrayBuffer(84+50*tris.length),dv=new DataView(buf);dv.setUint32(80,tris.length,true);
+  tris.forEach((t,i)=>{const o=84+50*i,u=[0,1,2].map(k=>t[1][k]-t[0][k]),v=[0,1,2].map(k=>t[2][k]-t[0][k]);const nm=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],l=Math.hypot(...nm)||1;[...nm.map(x=>x/l),...t[0],...t[1],...t[2]].forEach((x,k)=>dv.setFloat32(o+4*k,x,true));});
+  return new Uint8Array(buf);
+}
+function wireStl(){
+  const z0=P.ledT,z1=P.ledT+P.wireH,tris=[],q=(a,b,c)=>tris.push([a,b,c]),T=(p,z)=>[p[0],p[1],z];
+  wireLines().forEach(d=>{
+    const dx=d.b[0]-d.a[0],dy=d.b[1]-d.a[1],l=Math.hypot(dx,dy),nx=-dy/l*P.wireW/2,ny=dx/l*P.wireW/2;
+    const C=[[d.a[0]-nx,d.a[1]-ny],[d.b[0]-nx,d.b[1]-ny],[d.b[0]+nx,d.b[1]+ny],[d.a[0]+nx,d.a[1]+ny]];
+    q(T(C[0],z1),T(C[1],z1),T(C[2],z1));q(T(C[0],z1),T(C[2],z1),T(C[3],z1));
+    q(T(C[0],z0),T(C[2],z0),T(C[1],z0));q(T(C[0],z0),T(C[3],z0),T(C[2],z0));
+    for(let i=0;i<4;i++){const a=C[i],b=C[(i+1)%4];q(T(a,z0),T(b,z0),T(b,z1));q(T(a,z0),T(b,z1),T(a,z1));}
+  });
+  return triBuf(tris);
+}
 function maskStl(){const hs=ledHoles().map(c=>{const p=[];for(let i=0;i<40;i++){const a=i/40*2*Math.PI;p.push([c.x+c.r*Math.cos(a),c.y+c.r*Math.sin(a)]);}return p;});return stl(hs,P.ledT);}
 function render(){sync();
   holes=build();
@@ -117,9 +160,9 @@ function render(){sync();
   for(const h of holes){d+="M"+h.map(v=>v[0].toFixed(2)+" "+(-v[1]).toFixed(2)).join("L")+"Z";ha+=Math.abs(area(h));}
   const R=P.R,m=R+4;
   const svg=$("svg");svg.setAttribute("viewBox",`${-m} ${-m} ${2*m} ${2*m}`);
-  svg.innerHTML=`<path fill="var(--plate)" fill-rule="evenodd" d="M${-R} 0a${R} ${R} 0 1 0 ${2*R} 0a${R} ${R} 0 1 0 ${-2*R} 0Z${d}"/>`+ledHoles().map(c=>`<circle cx="${c.x.toFixed(2)}" cy="${(-c.y).toFixed(2)}" r="${c.r.toFixed(2)}" fill="var(--acc)"/>`).join("");
+  svg.innerHTML=`<path fill="var(--plate)" fill-rule="evenodd" d="M${-R} 0a${R} ${R} 0 1 0 ${2*R} 0a${R} ${R} 0 1 0 ${-2*R} 0Z${d}"/>`+ledHoles().map(c=>`<circle cx="${c.x.toFixed(2)}" cy="${(-c.y).toFixed(2)}" r="${c.r.toFixed(2)}" fill="var(--acc)"/>`).join("")+(P.wire?wireLines().map(d=>`<line x1="${d.a[0].toFixed(2)}" y1="${(-d.a[1]).toFixed(2)}" x2="${d.b[0].toFixed(2)}" y2="${(-d.b[1]).toFixed(2)}" stroke="#e8a317" stroke-width="${P.wireW}"/>`).join(""):"")+(P.wire?wireDots():"");
   const vol=(Math.PI*R*R-ha)*P.T;
-  $("stats").textContent=`${holes.length} holes, ${(2*R).toFixed(0)} mm across, ${P.T} mm thick, about ${(vol/1000).toFixed(1)} cm³ of material`;
+  $("stats").textContent=`${holes.length} holes, ${(2*R).toFixed(0)} mm across, ${P.T} mm thick, about ${(vol/1000).toFixed(1)} cm³ of material`+(P.wire?wireInfo():"");
 }
 let pending=false;
 function schedule(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render();});}
@@ -181,6 +224,7 @@ $("bstl").onclick=()=>{
   if(dl)save("voronoi_fibonacci_stl.zip",new Blob([zip("voronoi_fibonacci.stl",stl())],{type:"application/zip"}));else save("voronoi_fibonacci.stl",new Blob([stl()],{type:"model/stl"}));
 };
 $("bsvg").onclick=()=>save("voronoi_fibonacci.svg",svgText());
+$("bwire").onclick=()=>{const u=wireStl();if(dl)save("wiring_guide_stl.zip",new Blob([zip("wiring_guide.stl",u)],{type:"application/zip"}));else save("wiring_guide.stl",new Blob([u],{type:"model/stl"}));};
 $("bled").onclick=()=>{if(typeof earcut==="undefined"){msg("The triangulation library didn't load, so STL export is unavailable.");return;}const u=maskStl();if(dl)save("led_mask_stl.zip",new Blob([zip("led_mask.stl",u)],{type:"application/zip"}));else save("led_mask.stl",new Blob([u],{type:"model/stl"}));};
 $("breset").onclick=()=>{Object.assign(P,DEF);sync();schedule();};
 (async()=>{try{dl=await claude.use("downloads");}catch(e){dl=null;}
