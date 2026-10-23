@@ -53,8 +53,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </section>
 </main>
 <script>
-const DEF={R:260,T:2,N:256,k:4.825,wall:.8,border:5.6,led:5,ledT:2,wireW:2,wireH:3,arms:13,wire:false,fit:true,start:225};
-const SPEC=[["R","Plate radius (mm)",40,600,1],["T","Thickness (mm)",.4,10,.1],["N","Number of cells",20,800,1],["k","Spiral scale",1,40,.05],["wall","Wall between holes (mm)",.3,15,.05],["border","Border width (mm)",1,150,.1],["start","Start angle (deg)",0,360,1],["led","LED mask hole diameter (mm)",.5,40,.1],["ledT","LED mask thickness (mm)",.4,10,.1],["wireW","Wiring guide rib width (mm)",.6,10,.1],["wireH","Wiring guide rib height (mm)",.5,15,.1]];
+const DEF={R:260,T:2,N:256,k:4.825,wall:.8,border:5.6,led:5,ledT:2,wireW:2,wireH:3,arms:13,wire:false,split:false,fit:true,start:225};
+const SPEC=[["R","Plate radius (mm)",40,600,1],["T","Wall height (mm)",.4,100,.1],["N","Number of cells",20,800,1],["k","Spiral scale",1,40,.05],["wall","Wall between holes (mm)",.3,15,.05],["border","Border width (mm)",1,150,.1],["start","Start angle (deg)",0,360,1],["led","LED mask hole diameter (mm)",.5,40,.1],["ledT","LED mask thickness (mm)",.4,10,.1],["wireW","Wiring guide rib width (mm)",.6,10,.1],["wireH","Wiring guide rib height (mm)",.5,15,.1]];
 const P={...DEF}, GA=180*(3-Math.sqrt(5));
 const $=id=>document.getElementById(id);
 const ctl=$("ctl"), btns=ctl.querySelector(".btns");
@@ -83,7 +83,7 @@ armSel.addEventListener("change",()=>{P.arms=+armSel.value;schedule();});
 function sync(){
   if(P.border>P.R-5)P.border=P.R-5;
   for(const k in inputs){let v=k==="k"?+effK().toFixed(3):P[k];inputs[k][0].value=v;inputs[k][1].value=v;inputs[k][0].disabled=inputs[k][1].disabled=(k==="k"&&P.fit);}
-  fit.checked=P.fit;wireCb.checked=P.wire;armSel.value=P.arms;
+  fit.checked=P.fit;wireCb.checked=P.wire;armSel.value=P.arms;splitCb.checked=!!P.split;qb.style.display=P.split?"grid":"none";
 }
 
 function clipHalf(poly,p,nx,ny,lim){
@@ -153,6 +153,58 @@ function wireStl(){
   });
   return triBuf(tris);
 }
+function seedList(){const k=effK(),S=[];for(let i=0;i<P.N;i++){const r=k*Math.sqrt(i+.5),a=(P.start-i*GA)*Math.PI/180;S.push([r*Math.cos(a),r*Math.sin(a)]);}return S;}
+const quadOf=p=>Math.floor((((Math.atan2(p[1],p[0])*180/Math.PI)%360)+360)%360/90);
+function clipTag(poly,p,nx,ny,lim,tag){
+  const out=[];
+  for(let i=0;i<poly.length;i++){
+    const a=poly[i],b=poly[(i+1)%poly.length];
+    const da=(a[0]-p[0])*nx+(a[1]-p[1])*ny-lim,db=(b[0]-p[0])*nx+(b[1]-p[1])*ny-lim;
+    if(da<=0)out.push(a);
+    if((da<0&&db>0)||(da>0&&db<0)){const t=da/(da-db);out.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,da<0?tag:a[2]]);}
+  }
+  return out;
+}
+function territory(i,S){
+  const p=S[i],NO=180;let poly=[];
+  for(let s=0;s<NO;s++){const a=s/NO*2*Math.PI;poly.push([P.R*Math.cos(a),P.R*Math.sin(a),-1]);}
+  const others=[];for(let j=0;j<S.length;j++)if(j!==i)others.push([Math.hypot(S[j][0]-p[0],S[j][1]-p[1]),j]);
+  others.sort((a,b)=>a[0]-b[0]);
+  for(const [d,j] of others){
+    let m=0;for(const v of poly)m=Math.max(m,Math.hypot(v[0]-p[0],v[1]-p[1]));
+    if(d/2>m)break;
+    poly=clipTag(poly,p,(S[j][0]-p[0])/d,(S[j][1]-p[1])/d,d/2,j);
+    if(poly.length<3)break;
+  }
+  return poly;
+}
+function cutLines(){
+  const S=seedList(),Qd=S.map(quadOf);let d="";
+  for(let i=0;i<S.length;i++){const poly=territory(i,S);
+    poly.forEach((v,k)=>{const w=poly[(k+1)%poly.length];if(v[2]>i&&Qd[v[2]]!==Qd[i])d+=`M${v[0].toFixed(2)} ${(-v[1]).toFixed(2)}L${w[0].toFixed(2)} ${(-w[1]).toFixed(2)}`;});}
+  return `<path d="${d}" fill="none" stroke="#d946ef" stroke-width="${Math.max(.8,P.R/150).toFixed(2)}"/>`;
+}
+function quarterStl(q){
+  const S=seedList(),H=P.T,tris=[],hmap=new Map(),Qd=S.map(quadOf);
+  ids.forEach((id,k)=>hmap.set(id,holes[k]));
+  const wall=(a,b)=>{tris.push([[a[0],a[1],0],[b[0],b[1],0],[b[0],b[1],H]],[[a[0],a[1],0],[b[0],b[1],H],[a[0],a[1],H]]);};
+  for(let i=0;i<S.length;i++){
+    if(Qd[i]!==q)continue;
+    const poly=territory(i,S),h=hmap.get(i),rings=[poly.map(v=>[v[0],v[1]])];
+    if(h)rings.push(area(h)>0?h.slice().reverse():h);
+    const flat=[],hi=[];let n=0;
+    rings.forEach((r,k)=>{if(k)hi.push(n);r.forEach(v=>{flat.push(v[0],v[1]);n++;});});
+    const idx=earcut(flat,hi),V=j=>[flat[2*j],flat[2*j+1]];
+    for(let t=0;t<idx.length;t+=3){
+      let a=V(idx[t]),b=V(idx[t+1]),c=V(idx[t+2]);
+      if(area([a,b,c])<0)[b,c]=[c,b];
+      tris.push([[...a,H],[...b,H],[...c,H]],[[...a,0],[...c,0],[...b,0]]);
+    }
+    poly.forEach((v,k)=>{const w=poly[(k+1)%poly.length];if(v[2]===-1||(v[2]>=0&&Qd[v[2]]!==q))wall(v,w);});
+    if(h){const r=rings[1];for(let k=0;k<r.length;k++)wall(r[k],r[(k+1)%r.length]);}
+  }
+  return triBuf(tris);
+}
 function maskStl(){const hs=ledHoles().map(c=>{const p=[];for(let i=0;i<40;i++){const a=i/40*2*Math.PI;p.push([c.x+c.r*Math.cos(a),c.y+c.r*Math.sin(a)]);}return p;});return stl(hs,P.ledT);}
 function render(){sync();
   holes=build();
@@ -160,7 +212,7 @@ function render(){sync();
   for(const h of holes){d+="M"+h.map(v=>v[0].toFixed(2)+" "+(-v[1]).toFixed(2)).join("L")+"Z";ha+=Math.abs(area(h));}
   const R=P.R,m=R+4;
   const svg=$("svg");svg.setAttribute("viewBox",`${-m} ${-m} ${2*m} ${2*m}`);
-  svg.innerHTML=`<path fill="var(--plate)" fill-rule="evenodd" d="M${-R} 0a${R} ${R} 0 1 0 ${2*R} 0a${R} ${R} 0 1 0 ${-2*R} 0Z${d}"/>`+ledHoles().map(c=>`<circle cx="${c.x.toFixed(2)}" cy="${(-c.y).toFixed(2)}" r="${c.r.toFixed(2)}" fill="var(--acc)"/>`).join("")+(P.wire?wireLines().map(d=>`<line x1="${d.a[0].toFixed(2)}" y1="${(-d.a[1]).toFixed(2)}" x2="${d.b[0].toFixed(2)}" y2="${(-d.b[1]).toFixed(2)}" stroke="#e8a317" stroke-width="${P.wireW}"/>`).join(""):"")+(P.wire?wireDots():"");
+  svg.innerHTML=`<path fill="var(--plate)" fill-rule="evenodd" d="M${-R} 0a${R} ${R} 0 1 0 ${2*R} 0a${R} ${R} 0 1 0 ${-2*R} 0Z${d}"/>`+ledHoles().map(c=>`<circle cx="${c.x.toFixed(2)}" cy="${(-c.y).toFixed(2)}" r="${c.r.toFixed(2)}" fill="var(--acc)"/>`).join("")+(P.wire?wireLines().map(d=>`<line x1="${d.a[0].toFixed(2)}" y1="${(-d.a[1]).toFixed(2)}" x2="${d.b[0].toFixed(2)}" y2="${(-d.b[1]).toFixed(2)}" stroke="#e8a317" stroke-width="${P.wireW}"/>`).join(""):"")+(P.wire?wireDots():"")+(P.split?cutLines():"");
   const vol=(Math.PI*R*R-ha)*P.T;
   $("stats").textContent=`${holes.length} holes, ${(2*R).toFixed(0)} mm across, ${P.T} mm thick, about ${(vol/1000).toFixed(1)} cm³ of material`+(P.wire?wireInfo():"");
 }
@@ -229,6 +281,18 @@ $("bled").onclick=()=>{if(typeof earcut==="undefined"){msg("The triangulation li
 $("breset").onclick=()=>{Object.assign(P,DEF);sync();schedule();};
 (async()=>{try{dl=await claude.use("downloads");}catch(e){dl=null;}
   })();
+const splitBox=document.createElement("div");
+splitBox.innerHTML='<label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="split"> Split into 4 quarters for printing</label>';
+ctl.insertBefore(splitBox,btns);
+const splitCb=splitBox.querySelector("input");
+const qb=document.createElement("div");qb.style.cssText="display:none;grid-template-columns:1fr 1fr;gap:8px";
+for(let q=0;q<4;q++){const b=document.createElement("button");b.className="alt";b.textContent="Download quarter "+(q+1);
+  b.onclick=()=>{if(typeof earcut==="undefined"){msg("The triangulation library didn't load, so STL export is unavailable.");return;}
+    const u=quarterStl(q),n="quarter_"+(q+1);
+    if(dl)save(n+"_stl.zip",new Blob([zip(n+".stl",u)],{type:"application/zip"}));else save(n+".stl",new Blob([u],{type:"model/stl"}));};
+  qb.appendChild(b);}
+btns.insertBefore(qb,$("bled"));
+splitCb.addEventListener("change",()=>{P.split=splitCb.checked;qb.style.display=P.split?"grid":"none";schedule();});
 sync();render();
 </script>
 </body>
