@@ -2,8 +2,6 @@
 
 **Live version:** <https://jedimongoose.github.io/Fibonacci-Voronoi-generator/>
 
-Source code: <https://github.com/JediMongoose/Fibonacci-Voronoi-generator>
-
 A single-file web app that generates a round, 3D-printable plate cut with one hole per cell of a Voronoi diagram built on a Fibonacci ("sunflower") spiral. It is designed for a **backlit LED panel** made of separate printed parts:
 
 | Part | Typical filament | Purpose |
