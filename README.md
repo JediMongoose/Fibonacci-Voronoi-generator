@@ -32,28 +32,38 @@ Open `voronoi_fibonacci_app.html` in a modern browser (Chrome, Edge, Firefox, Sa
 - Each hole is the Voronoi cell of its seed, inset by half the wall width, and clipped to a circle of radius `plate radius - border width`.
 - With the original settings (R = 86 mm, 256 cells, 5.6 mm border, 0.8 mm walls) the result matches the source STL to within about 0.025 mm per cell.
 
+## Cross-section diagram
+
+Under the preview, a side-view cross-section shows how the settings stack up, redrawing as you change anything. It shows the border and two neighbouring cells, with the LED mask underneath. It includes the walls, the diffuser ledge and pocket, the diffuser, the LED holes and the LED module pockets.
+
+- Each setting has a lettered, colour-coded dimension mark, and the legend below lists the letters with their current values. For example, A is the wall height, C the diffuser pocket depth, I the ledge width and L the LED pocket diameter.
+- The drawing is to scale in both directions. Cells are drawn at their average width.
+- Debossed wiring grooves run along the plate rather than across it, so they are not drawn.
+
 ## Settings
 
 | Setting | Range | Default | Notes |
 |---|---|---|---|
 | Plate radius | 40 – 600 mm | 260 | |
 | Wall height | 0.4 – 100 mm | 2 | Height of the thin walls between cells |
-| Border height | 0.4 – 100 mm | 2 | Height of the solid outer rim, separate from the walls |
+| Border height | 0.4 – 100 mm | 2 | Height of the solid outer rim, separate from the walls. Ignored while **Flat top surface** is on |
 | Number of cells | 20 – 800 | 256 | |
 | Wall between holes | 0.3 – 15 mm | 0.8 | |
 | Border width | 1 – 150 mm | 5.6 | Solid rim between the outermost holes and the plate edge |
 | LED mask hole diameter | 0.5 – 40 mm | 5 | Capped to about 95% of the largest circle that fits in a cell |
 | LED mask thickness | 0.4 – 10 mm | 2 | |
-| LED mask size clearance | -5 – 10 mm | 1 | Shrinks the mask's outer edge (negative grows it) |
-| LED module pocket diameter | 0 – 30 mm | 10 | 0 turns pockets off. Capped to about 97% of the cell |
+| LED mask extra clearance | -5 – 10 mm | 0 | The mask's radius is always `plate radius - wall thickness - this value`, so it fits inside the main piece. Increase for a looser fit, or go negative for a tighter one |
+| LED module pocket diameter | 0 – 30 mm | 10 | 0 turns pockets off. Always exactly the size you set, even if it touches neighbouring cells or runs over the mask edge |
 | LED module pocket depth | 0.2 – 10 mm | 2 | On the bottom of the mask. Capped to leave 0.2 mm of mask |
-| Diffuser height | 0.2 – 100 mm | 2 | |
+| Diffuser pocket depth | 0.2 – 50 mm | 1 | How deep the diffuser sits in the walls. Capped to leave at least 0.4 mm of ledge. Ignored while **Flat top surface** is on |
+| Diffuser ledge width | 0 – 10 mm | 1 | How far the lower opening is narrower than the pocket. 0 turns the pocket off (plain through-holes) |
+| Diffuser height | 0.2 – 100 mm | 1 | Match this to the pocket depth for a flush fit |
 | Diffuser clearance | -2 – 1 mm | 0.1 | Shrinks each cell. Negative values make the diffuser overlap the walls |
 | Debossed line width / depth | 0.3 – 5 mm / 0.1 – 5 mm | 1 / 0.6 | Only used when "Deboss wiring lines on LED mask" is ticked |
 | Wiring guide rib width / height | 0.6 – 10 mm / 0.5 – 15 mm | 2 / 3 | For the separate raised guide |
 | Wiring segments (spiral arms) | 5, 8, 13, 21, 34 | 13 | |
 
-Checkboxes: **Show wiring guide in preview**, **Deboss wiring lines on LED mask**, **Split into 4 quarters for printing**.
+Checkboxes: **Flat top surface**, **Show wiring guide in preview**, **Diffuser pocket on the top face**, **Deboss wiring lines on LED mask**, **Mirror diffuser cells on export**, **Split into 4 quarters for printing**.
 
 ## Wiring segments
 
@@ -79,13 +89,27 @@ Tick **Split into 4 quarters for printing** to cut the plate into four pieces fo
 | Download STL | The walls and border. With the split on: a zip of 4 quarters |
 | Download LED mask STL | The mask. With the split on: a zip of 4 quarters |
 | Download wiring guide STL | The raised ribs, one solid per LED-to-LED section |
-| Download diffuser cells STL | One solid per cell. With the split on: a zip of 4 quarters |
+| Download diffuser cells STL | One solid per cell, **mirrored** (see below). With the split on: a zip of 4 quarters |
 | Download 3MF of all parts | See below |
 | Download SVG outline | 2D outline at true size (mm), useful for laser cutting |
 | Save / Load settings to file | JSON settings file |
 | Reset settings to defaults | Restores the defaults and clears the saved browser settings |
 
 Files in zips have the current date and time.
+
+### Diffuser pocket
+
+Each wall cell is a stepped opening instead of a plain through-hole. Part of the way through, the opening narrows by the **ledge width**, leaving a ledge for the diffuser to rest on. The diffuser then overlaps the ledge all the way round, so no light can pass straight through a gap around its edge without being diffused.
+
+- By default the pocket is on the top face (the viewing side). Untick **Diffuser pocket on the top face** to put it on the bottom.
+- The pocket is as wide as the cell opening, and the **diffuser clearance** still sets how snugly the diffuser fits inside it.
+- The diffuser cells are separate flat pieces of the **diffuser height**. In the 3MF each diffuser sits at the pocket height inside its wall quarter.
+- **Flat top surface** (on by default) keeps the whole front face level: the border is the same height as the walls, and the pocket depth is set to the diffuser height, so each diffuser sits flush with the walls and border. The ledge under it is the wall height minus the diffuser height (for example 2 mm walls and a 0.6 mm diffuser leave a 1.4 mm ledge). The *border height* and *pocket depth* sliders are greyed out while it is on. Untick it to set them separately.
+- A negative diffuser clearance larger than the wall thickness makes neighbouring diffusers overlap into one sheet.
+
+### Diffuser mirroring
+
+The diffuser cells STL is exported as a mirror image (flipped left to right) so the part is correct when it is printed flipped over. Untick **Mirror diffuser cells on export** to get the unmirrored shape. The 3MF is not mirrored, because it keeps each diffuser quarter in its assembled position inside the matching wall quarter. With the split on, each mirrored quarter swaps sides, so quarter 1 lands on the left.
 
 ### LED mask details
 

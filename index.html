@@ -67,6 +67,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
 <section class="view">
   <svg id="svg" viewBox="-90 -90 180 180" role="img" aria-label="Preview of the plate"></svg>
   <div class="st" id="stats"></div>
+  <div class="st" style="margin-top:16px;font-weight:600;color:var(--ink)">Cross-section: border and two neighbouring cells (side view, to scale)</div>
+  <svg id="xs" viewBox="0 0 760 300" role="img" aria-label="Cross-section diagram of the panel layers" style="margin-top:6px"></svg>
+  <div class="st" id="xsl"></div>
 </section>
 <section class="ctl" id="ctl">
   <div class="btns">
@@ -84,8 +87,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </section>
 </main>
 <script>
-const DEF={R:260,T:2,N:256,k:4.825,wall:.8,border:5.6,led:5,ledT:2,wireW:2,wireH:3,arms:13,wire:false,deboss:false,debW:1,debD:.6,diffH:2,diffClr:.1,maskClr:0,mirrorDiff:true,borderH:2,podD:10,podH:2,split:false,fit:true,start:225};
-const SPEC=[["R","Plate radius (mm)",40,600,1],["T","Wall height (mm)",.4,100,.1],["borderH","Border height (mm)",.4,100,.1],["diffH","Diffuser height (mm)",.2,100,.1],["diffClr","Diffuser clearance (mm, negative = overlap)",-2,1,.01],["maskClr","LED mask extra clearance (mm; mask radius = plate radius - wall - this)",-5,10,.1],["podD","LED module pocket diameter (mm, 0 = none)",0,30,.5],["podH","LED module pocket depth (mm)",.2,10,.1],["N","Number of cells",20,800,1],["wall","Wall between holes (mm)",.3,15,.05],["border","Border width (mm)",1,150,.1],["led","LED mask hole diameter (mm)",.5,40,.1],["ledT","LED mask thickness (mm)",.4,10,.1],["debW","Debossed line width (mm)",.3,5,.1],["debD","Debossed line depth (mm)",.1,5,.1],["wireW","Wiring guide rib width (mm)",.6,10,.1],["wireH","Wiring guide rib height (mm)",.5,15,.1]];
+const DEF={R:260,T:2,N:256,k:4.825,wall:.8,border:5.6,led:5,ledT:2,wireW:2,wireH:3,arms:13,wire:false,deboss:false,debW:1,debD:.6,diffH:1,dpD:1,dpL:1,dpTop:true,flatTop:true,diffClr:.1,maskClr:0,mirrorDiff:true,borderH:2,podD:10,podH:2,split:false,fit:true,start:225};
+const SPEC=[["R","Plate radius (mm)",40,600,1],["T","Wall height (mm)",.4,100,.1],["borderH","Border height (mm, ignored when flat top is on)",.4,100,.1],["diffH","Diffuser height (mm)",.2,100,.1],["dpD","Diffuser pocket depth (mm, ignored when flat top is on)",.2,50,.1],["dpL","Diffuser ledge width (mm, 0 = no pocket)",0,10,.1],["diffClr","Diffuser clearance (mm, negative = overlap)",-2,1,.01],["maskClr","LED mask extra clearance (mm; mask radius = plate radius - wall - this)",-5,10,.1],["podD","LED module pocket diameter (mm, 0 = none)",0,30,.5],["podH","LED module pocket depth (mm)",.2,10,.1],["N","Number of cells",20,800,1],["wall","Wall between holes (mm)",.3,15,.05],["border","Border width (mm)",1,150,.1],["led","LED mask hole diameter (mm)",.5,40,.1],["ledT","LED mask thickness (mm)",.4,10,.1],["debW","Debossed line width (mm)",.3,5,.1],["debD","Debossed line depth (mm)",.1,5,.1],["wireW","Wiring guide rib width (mm)",.6,10,.1],["wireH","Wiring guide rib height (mm)",.5,15,.1]];
 const P={...DEF}, GA=180*(3-Math.sqrt(5));
 const $=id=>document.getElementById(id);
 const ctl=$("ctl"), btns=ctl.querySelector(".btns");
@@ -109,7 +112,7 @@ armSel.addEventListener("change",()=>{P.arms=+armSel.value;schedule();});
 function sync(){
   if(P.border>P.R-5)P.border=P.R-5;
   for(const k in inputs){inputs[k][0].value=P[k];inputs[k][1].value=P[k];}
-  wireCb.checked=P.wire;armSel.value=P.arms;splitCb.checked=!!P.split;debCb.checked=!!P.deboss;mirCb.checked=!!P.mirrorDiff;updSplit();
+  wireCb.checked=P.wire;armSel.value=P.arms;splitCb.checked=!!P.split;debCb.checked=!!P.deboss;mirCb.checked=!!P.mirrorDiff;topCb.checked=!!P.dpTop;flatCb.checked=!!P.flatTop;["dpD","borderH"].forEach(k=>{inputs[k][0].disabled=inputs[k][1].disabled=!!P.flatTop;});updSplit();
 }
 
 function clipHalf(poly,p,nx,ny,lim){
@@ -251,7 +254,7 @@ function mirrorStl(u){
 }
 const dMir=u=>P.mirrorDiff?mirrorStl(u):u;
 function diffuserStl(q){
-  const SL=q===undefined?null:seedList(),H=P.diffH,c=P.diffClr,tris=[],T=(p,z)=>[p[0],p[1],z];
+  const SL=q===undefined?null:seedList(),H=(P.flatTop&&P.dpL>0)?pocketDepth():P.diffH,c=P.diffClr,tris=[],T=(p,z)=>[p[0],p[1],z];
   holes.forEach((h0,hk)=>{
     if(SL&&quadOf(SL[ids[hk]])!==q)return;
     const h=area(h0)<0?h0.slice().reverse():h0;let poly=h.map(v=>[v[0],v[1]]);
@@ -301,6 +304,9 @@ function extrudeMP(mp,z0,z1,tris){
     rings.forEach(r=>{for(let k=0;k<r.length;k++){const a=r[k],b=r[(k+1)%r.length];tris.push([[a[0],a[1],z0],[b[0],b[1],z0],[b[0],b[1],z1]],[[a[0],a[1],z0],[b[0],b[1],z1],[a[0],a[1],z1]]);}});
   });
 }
+function shrinkConvex(poly,c){let r=poly;for(let i=0;i<poly.length&&r.length>=3;i++){const a=poly[i],b=poly[(i+1)%poly.length],ex=b[0]-a[0],ey=b[1]-a[1],l=Math.hypot(ex,ey)||1;r=clipHalf(r,a,ey/l,-ex/l,-c);}return r.length>=3?r:[];}
+const pocketDepth=()=>Math.min(P.flatTop?P.diffH:P.dpD,Math.max(.1,P.T-.4));
+const bH=()=>P.flatTop?P.T:P.borderH;
 function plateSplitStl(q){
   const pc=polygonClipping,S=seedList(),Qd=S.map(quadOf),tris=[];
   const disc=r=>{const pg=[];for(let i=0;i<180;i++){const a=i/180*2*Math.PI;pg.push([r*Math.cos(a),r*Math.sin(a)]);}return [[pg]];};
@@ -311,11 +317,16 @@ function plateSplitStl(q){
   const hg=[];holes.forEach((h,k)=>{if(q!==undefined&&Qd[ids[k]]!==q)return;hg.push([h.map(v=>[v[0],v[1]])]);});
   const inner=pc.intersection(dom,disc(rs));
   const walls=hg.length?pc.difference(inner,...hg):inner;
-  extrudeMP(walls,0,P.T,tris);
-  extrudeMP(pc.difference(dom,disc(rs)),0,P.borderH,tris);
+  if(P.dpL>0){
+    const ng=[];holes.forEach((h,k)=>{if(q!==undefined&&Qd[ids[k]]!==q)return;const hh=area(h)<0?h.slice().reverse():h,pg=shrinkConvex(hh.map(v=>[v[0],v[1]]),P.dpL);if(pg.length>=3)ng.push([pg]);});
+    const pd=pocketDepth(),lower=ng.length?pc.difference(inner,...ng):inner,upper=walls;
+    if(P.dpTop){extrudeMP(lower,0,P.T-pd,tris);extrudeMP(upper,P.T-pd,P.T,tris);}
+    else{extrudeMP(upper,0,pd,tris);extrudeMP(lower,pd,P.T,tris);}
+  }else extrudeMP(walls,0,P.T,tris);
+  extrudeMP(pc.difference(dom,disc(rs)),0,bH(),tris);
   return triBuf(tris);
 }
-function plateOut(q){return Math.abs(P.borderH-P.T)>1e-6?plateSplitStl(q):(q===undefined?stl():quarterStl(q));}
+function plateOut(q){return (Math.abs(bH()-P.T)>1e-6||P.dpL>0)?plateSplitStl(q):(q===undefined?stl():quarterStl(q));}
 function maskStl(){const hs=ledHoles().map(c=>{const p=[];for(let i=0;i<40;i++){const a=i/40*2*Math.PI;p.push([c.x+c.r*Math.cos(a),c.y+c.r*Math.sin(a)]);}return p;});return stl(hs,P.ledT,maskR());}
 const LSK="vfp_settings_v1";
 function saveLocal(){const j=JSON.stringify(P);try{localStorage.setItem(LSK,j);}catch(e){}try{document.cookie=LSK+"="+encodeURIComponent(j)+"; max-age=31536000; path=/; SameSite=Lax";}catch(e){}}
@@ -323,6 +334,56 @@ function loadLocal(){let j=null;try{j=localStorage.getItem(LSK);}catch(e){}
   if(!j)try{const m=document.cookie.split("; ").find(c=>c.startsWith(LSK+"="));if(m)j=decodeURIComponent(m.slice(LSK.length+1));}catch(e){}
   if(!j)return;try{const o=JSON.parse(j);for(const k in DEF)if(typeof o[k]===typeof DEF[k]&&(typeof o[k]!=="number"||isFinite(o[k])))P[k]=o[k];}catch(e){}}
 function clearLocal(){try{localStorage.removeItem(LSK);}catch(e){}try{document.cookie=LSK+"=; max-age=0; path=/";}catch(e){}}
+function drawXs(){
+  const svg=$("xs");if(!svg)return;
+  const T=P.T,bh=bH(),ledT=P.ledT,w=P.wall,fl=P.dpL>0,pd=fl?pocketDepth():0,F=v=>(+v.toFixed(2)).toString();
+  let ha=0;holes.forEach(h=>{ha+=Math.abs(area(h));});
+  const cw=Math.max(3,holes.length?Math.sqrt(ha/holes.length):10);
+  const lw=Math.min(fl?P.dpL:0,cw/2-.2),bw=Math.max(.2,P.border-w/2),cA=P.border,cB=cA+cw+w,totW=cB+cw+w;
+  const dh=(P.flatTop&&fl)?pd:P.diffH,clr=P.diffClr;
+  const dY0=fl?(P.dpTop?T-pd:0):Math.max(0,T-dh),dY1=dY0+dh;
+  const mp=P.podD>0?Math.min(P.podH,Math.max(.1,ledT-.2)):0,hd=Math.min(P.led,cw*.95);
+  const ymax=Math.max(T,bh,dY1),ymin=-ledT,W=760,LM=24,RM=200,TM=118,BM=64;
+  const s=Math.min(24,(W-LM-RM)/totW,230/(ymax-ymin));
+  const X=x=>LM+x*s,Y=y=>TM+(ymax-y)*s,Hh=TM+(ymax-ymin)*s+BM;
+  const rect=(x,y0,y1,wd,fill,ex)=>`<rect x="${X(x).toFixed(1)}" y="${Y(y1).toFixed(1)}" width="${Math.max(0,wd*s).toFixed(1)}" height="${Math.max(0,(y1-y0)*s).toFixed(1)}" fill="${fill}" ${ex||""}/>`;
+  const o=[],bg="var(--panel)",wc="var(--plate)",mx=Math.max(0,w+P.maskClr);
+  o.push(rect(mx,-ledT,0,totW-mx,"#8497a1"));
+  [cA,cB].forEach(cs=>{const cc=cs+cw/2;o.push(rect(cc-hd/2,-ledT,0,hd,bg));
+    if(mp>0){o.push(rect(cc-P.podD/2,-ledT,-ledT+mp,P.podD,bg),rect(cc-P.podD*.35,-ledT,-ledT+mp*.8,P.podD*.7,"#e8a317"));}});
+  o.push(rect(0,0,bh,bw,wc),rect(bw,0,T,P.border-bw,wc),rect(cA+cw,0,T,w,wc),rect(cB+cw,0,T,w,wc));
+  if(lw>0){const y0=P.dpTop?0:pd,y1=P.dpTop?T-pd:T;[cA,cB].forEach(cs=>o.push(rect(cs,y0,y1,lw,wc),rect(cs+cw-lw,y0,y1,lw,wc)));}
+  [cA,cB].forEach(cs=>{const dw=cw-2*clr;if(dw>.1)o.push(rect(cs+clr,dY0,dY1,dw,"#fff",'stroke="var(--mute)" stroke-width="1" fill-opacity=".9"'));});
+  const leg=[],badge=(x,y,L,c)=>`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="8" fill="${c}"/><text x="${x.toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">${L}</text>`;
+  const gl=(x1,y1,x2,y2,c)=>`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${c}" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>`;
+  const ln=(x1,y1,x2,y2,c)=>`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${c}" stroke-width="1.6"/>`;
+  const top=(x1,x2,row,L,c,name,val)=>{const a=X(Math.min(x1,x2)),b=X(Math.max(x1,x2)),y=Y(ymax)-18-row*22;
+    o.push(gl(a,y,a,Y(ymax),c),gl(b,y,b,Y(ymax),c),ln(a,y,b,y,c),ln(a,y-4,a,y+4,c),ln(b,y-4,b,y+4,c),badge((a+b)/2,y-11,L,c));leg.push([L,c,name,val]);};
+  const bot=(x1,x2,row,L,c,name,val)=>{const a=X(Math.min(x1,x2)),b=X(Math.max(x1,x2)),y=Y(ymin)+16+row*22;
+    o.push(gl(a,Y(ymin),a,y,c),gl(b,Y(ymin),b,y,c),ln(a,y,b,y,c),ln(a,y-4,a,y+4,c),ln(b,y-4,b,y+4,c),badge((a+b)/2,y+12,L,c));leg.push([L,c,name,val]);};
+  const side=(y0,y1,col,L,c,name,val)=>{const x=X(totW)+20+col*30,a=Y(y0),b=Y(y1);
+    o.push(gl(X(totW)+2,a,x,a,c),gl(X(totW)+2,b,x,b,c),ln(x,a,x,b,c),ln(x-4,a,x+4,a,c),ln(x-4,b,x+4,b,c),badge(x+14,(a+b)/2,L,c));leg.push([L,c,name,val]);};
+  const co=["#e5484d","#f5a524","#12a594","#3e63dd","#8e4ec6","#d6409f","#0090ff","#978365","#30a46c","#e54666","#6e56cf","#ab6400"];
+  side(0,T,0,"A",co[0],"Wall height",F(T)+" mm");
+  if(Math.abs(bh-T)>1e-6)side(0,bh,1,"B",co[1],"Border height",F(bh)+" mm");
+  else leg.push(["B",co[1],"Border height",F(bh)+" mm (same as walls)"]);
+  if(fl)side(P.dpTop?T-pd:0,P.dpTop?T:pd,2,"C",co[2],"Diffuser pocket depth",F(pd)+" mm");
+  side(dY0,dY1,3,"D",co[3],"Diffuser height",F(dh)+" mm");
+  side(-ledT,0,4,"E",co[4],"LED mask thickness",F(ledT)+" mm");
+  if(mp>0)side(-ledT,-ledT+mp,5,"F",co[5],"LED module pocket depth",F(mp)+" mm");
+  top(0,P.border,0,"G",co[6],"Border width",F(P.border)+" mm");
+  top(cA+cw,cA+cw+w,1,"H",co[7],"Wall thickness",F(w)+" mm");
+  if(lw>0)top(cB,cB+lw,2,"I",co[8],"Diffuser ledge width",F(P.dpL)+" mm");
+  if(Math.abs(clr)>.001)top(cB,cB+clr,3,"J",co[9],"Diffuser clearance",F(clr)+" mm"+(clr<0?" (overlap)":""));
+  bot(cA+cw/2-hd/2,cA+cw/2+hd/2,0,"K",co[10],"LED hole diameter",F(P.led)+" mm");
+  if(mp>0)bot(cB+cw/2-P.podD/2,cB+cw/2+P.podD/2,0,"L",co[11],"LED module pocket diameter",F(P.podD)+" mm");
+  svg.setAttribute("viewBox",`0 0 ${W} ${Hh.toFixed(0)}`);
+  svg.innerHTML=o.join("");
+  const sw=(c,t,b)=>`<span style="display:inline-flex;align-items:center;gap:5px;margin:2px 12px 2px 0"><span style="width:14px;height:14px;border-radius:3px;background:${c};${b?"border:1px solid var(--mute)":""}"></span>${t}</span>`;
+  const key=sw("var(--plate)","Walls and border (black)")+sw("#fff","Diffuser (white)",1)+sw("#8497a1","LED mask")+sw("#e8a317","LED module");
+  const lg=leg.map(([L,c,n,v])=>`<span style="display:inline-flex;align-items:center;gap:5px;margin:2px 12px 2px 0"><b style="background:${c};color:#fff;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">${L}</b>${n}: ${v}</span>`).join("");
+  $("xsl").innerHTML=`<div style="margin-top:4px">${key}</div><div style="margin-top:4px">${lg}</div><div style="margin-top:6px">Cells are drawn at their average width (about ${F(cw)} mm). The mask sits under the walls, with the LED modules in the pockets on its underside. Debossed wiring grooves are not shown.</div>`;
+}
 function render(){sync();saveLocal();
   holes=build();
   let d="",ha=0;
@@ -330,8 +391,8 @@ function render(){sync();saveLocal();
   const R=P.R,m=R+4;
   const svg=$("svg");svg.setAttribute("viewBox",`${-m} ${-m} ${2*m} ${2*m}`);
   svg.innerHTML=`<path fill="var(--plate)" fill-rule="evenodd" d="M${-R} 0a${R} ${R} 0 1 0 ${2*R} 0a${R} ${R} 0 1 0 ${-2*R} 0Z${d}"/>`+ledHoles().map(c=>`<circle cx="${c.x.toFixed(2)}" cy="${(-c.y).toFixed(2)}" r="${c.r.toFixed(2)}" fill="var(--acc)"/>`+(P.podD>0?`<circle cx="${c.x.toFixed(2)}" cy="${(-c.y).toFixed(2)}" r="${(P.podD/2).toFixed(2)}" fill="none" stroke="var(--acc)" stroke-width=".4"/>`:"")).join("")+((P.wire||P.deboss)?wireLines().map(d=>`<line x1="${d.a[0].toFixed(2)}" y1="${(-d.a[1]).toFixed(2)}" x2="${d.b[0].toFixed(2)}" y2="${(-d.b[1]).toFixed(2)}" stroke="#e8a317" stroke-width="${P.wire?P.wireW:P.debW}"/>`).join(""):"")+((P.wire||P.deboss)?wireDots():"")+(P.split?cutLines():"");
-  const rsv=Math.min(R-1,R-P.border+P.wall/2),vol=(Math.PI*rsv*rsv-ha)*P.T+Math.PI*(R*R-rsv*rsv)*P.borderH;
-  $("stats").textContent=`${holes.length} holes, ${(2*R).toFixed(0)} mm across, ${P.T} mm thick, about ${(vol/1000).toFixed(1)} cm³ of material`+((P.wire||P.deboss)?wireInfo():"");
+  const rsv=Math.min(R-1,R-P.border+P.wall/2),vol=(Math.PI*rsv*rsv-ha)*P.T+Math.PI*(R*R-rsv*rsv)*bH();
+  $("stats").textContent=`${holes.length} holes, ${(2*R).toFixed(0)} mm across, ${P.T} mm thick, about ${(vol/1000).toFixed(1)} cm³ of material`+((P.wire||P.deboss)?wireInfo():"");drawXs();
 }
 let pending=false;
 function schedule(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render();});}
@@ -422,7 +483,7 @@ async function build3mf(){
     const g={name:P.split?"Quarter "+(q+1):"Plate",parts:[]};
     const w=plateOut(P.split?q:undefined),d=P.split?diffuserStl(q):diffuserStl();
     if(w.length>84)g.parts.push({name:"Walls",mesh:stlMesh(w),ex:1});
-    if(d.length>84)g.parts.push({name:"Diffuser",mesh:stlMesh(d),ex:2});
+    if(d.length>84)g.parts.push({name:"Diffuser",mesh:stlMesh(d),ex:2,zoff:P.dpL>0&&P.dpTop?P.T-pocketDepth():0});
     groups.push(g);
   }
   if(P.split){
@@ -439,10 +500,10 @@ async function build3mf(){
   const plates=groups.length,sq=Math.sqrt(plates),cols=sq>Math.round(sq)?Math.round(sq)+1:Math.round(sq);
   groups.forEach((g,gi)=>{
     const ox=(gi%cols)*BED*PG,oy=-Math.floor(gi/cols)*BED*PG;
-    g.parts.forEach(p=>p.b=bbox(p.mesh));
+    g.parts.forEach(p=>{p.b=bbox(p.mesh);if(p.zoff){p.b[4]+=p.zoff;p.b[5]+=p.zoff;}});
     if(!g.shelf){
       const u=g.parts.map(p=>p.b).reduce(U),w=u[1]-u[0],h=u[3]-u[2];
-      g.parts.forEach(p=>{p.dx=ox+BED/2-(u[0]+u[1])/2;p.dy=oy+BED/2-(u[2]+u[3])/2;p.dz=-u[4];});
+      g.parts.forEach(p=>{p.dx=ox+BED/2-(u[0]+u[1])/2;p.dy=oy+BED/2-(u[2]+u[3])/2;p.dz=-u[4]+(p.zoff||0);});
       if(w>BED||h>BED)warn.push(g.name+" is "+w.toFixed(0)+" x "+h.toFixed(0)+" mm");
     }else{
       g.parts.forEach(p=>{const w=p.b[1]-p.b[0],h=p.b[3]-p.b[2];
@@ -520,6 +581,16 @@ const mirBox=document.createElement("div");
 mirBox.innerHTML='<label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="mirror"> Mirror diffuser cells on export (print flipped)</label>';
 ctl.insertBefore(mirBox,btns);
 const mirCb=mirBox.querySelector("input");
+const topBox=document.createElement("div");
+topBox.innerHTML='<label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="dptop"> Diffuser pocket on the top face (untick for bottom)</label>';
+ctl.insertBefore(topBox,btns);
+const topCb=topBox.querySelector("input");
+const flatBox=document.createElement("div");
+flatBox.innerHTML='<label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="flattop"> Flat top surface (diffusers flush with walls and border)</label>';
+ctl.insertBefore(flatBox,btns);
+const flatCb=flatBox.querySelector("input");
+flatCb.addEventListener("change",()=>{P.flatTop=flatCb.checked;schedule();});
+topCb.addEventListener("change",()=>{P.dpTop=topCb.checked;schedule();});
 mirCb.addEventListener("change",()=>{P.mirrorDiff=mirCb.checked;schedule();});
 debCb.addEventListener("change",()=>{P.deboss=debCb.checked;schedule();});
 function updSplit(){$("bstl").textContent=P.split?"Download STL (zip of 4 quarters)":"Download STL";$("bdiff").textContent=P.split?"Download diffuser cells (zip of 4 quarters)":"Download diffuser cells STL";$("bled").textContent=P.split?"Download LED mask (zip of 4 quarters)":"Download LED mask STL";}
